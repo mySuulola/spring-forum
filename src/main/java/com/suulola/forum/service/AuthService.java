@@ -33,6 +33,12 @@ public class AuthService {
 
   @Transactional
   public void signup(RegisterRequest registerRequest) {
+   User userExist = userRepository.findByUsername(registerRequest.getUsername()).get();
+
+    if(userExist.getUsername().isEmpty()) {
+      new ForumCustomException("User already Exist");
+   }
+
     User newUser = new User();
     newUser.setUsername(registerRequest.getUsername());
     newUser.setEmail(registerRequest.getEmail());
@@ -43,7 +49,7 @@ public class AuthService {
     userRepository.save(newUser);
 
     String token = generateVerificationToken(newUser);
-    String message = mailContentBuilder.build("Thank you for signing up to the forum. Please click on the url below to activate your account: " + ACTIVATION_EMAIL + "/n" + token);
+    String message = mailContentBuilder.build("Thank you for signing up to the forum. Please click on the url below to activate your account: " + ACTIVATION_EMAIL+ "/" + token);
     mailService.sendMail(new NotificationEmail("Please Activate your account", newUser.getEmail(), message));
   }
 
@@ -60,13 +66,24 @@ public class AuthService {
   public void verifyAccount(String token) {
     Optional<VerificationToken> verificationTokenOptional = verificationTokenRepository.findByToken(token);
     verificationTokenOptional.orElseThrow(() -> new ForumCustomException("Invalid Token"));
+    System.out.println("hfdsjk");
     fetchUserAndEnable(verificationTokenOptional.get());
+    System.out.println("got here 1");
   }
 
   private void fetchUserAndEnable(VerificationToken verificationToken) {
     String username = verificationToken.getUser().getUsername();
+    System.out.println("got here 2");
+    System.out.println(username);
     User user = userRepository.findByUsername(username).orElseThrow(() ->  new ForumCustomException("User Not found with id - " + username));
+    System.out.println(user.toString());
+    System.out.println("got here 3");
+
     user.setEnabled(true);
+    System.out.println("got here 4");
+
     userRepository.save(user);
+    System.out.println("got here 5");
+
   }
 }
