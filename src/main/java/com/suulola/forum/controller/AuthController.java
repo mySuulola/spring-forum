@@ -1,5 +1,7 @@
 package com.suulola.forum.controller;
 
+import com.suulola.forum.dto.AuthenticationResponse;
+import com.suulola.forum.dto.LoginRequest;
 import com.suulola.forum.dto.RegisterRequest;
 import com.suulola.forum.service.AuthService;
 import lombok.AllArgsConstructor;
@@ -23,6 +25,11 @@ public class AuthController {
     public ResponseEntity register(@RequestBody RegisterRequest registerRequest) {
         authService.signup(registerRequest);
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @PostMapping("/login")
+    public AuthenticationResponse login(@RequestBody LoginRequest loginRequest) {
+       return authService.login(loginRequest);
     }
 
     @GetMapping("/accountVerification/{token}")
