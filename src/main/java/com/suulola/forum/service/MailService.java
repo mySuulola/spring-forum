@@ -4,6 +4,7 @@ import com.suulola.forum.exception.ForumCustomException;
 import com.suulola.forum.model.NotificationEmail;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -12,12 +13,18 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 class MailService {
 
-    private final JavaMailSender javaMailSender;
-    private final MailContentBuilder mailContentBuilder;
+    final JavaMailSender javaMailSender;
+
+    final MailContentBuilder mailContentBuilder;
+
+    @Autowired
+    public MailService(JavaMailSender javaMailSender, MailContentBuilder mailContentBuilder) {
+        this.javaMailSender = javaMailSender;
+        this.mailContentBuilder = mailContentBuilder;
+    }
 
     @Async
     void sendMail(NotificationEmail notificationEmail) {
@@ -30,9 +37,9 @@ class MailService {
         };
         try {
             javaMailSender.send(messagePreparator);
-            log.info("Activation email sent!!!");
+//            log.info("Activation email sent!!!");
         }catch (MailException e) {
-            log.error(e.getMessage());
+//            log.error(e.getMessage());
             throw new ForumCustomException("Exception occurred when sending mail to " + notificationEmail.getReceipient());
         }
 

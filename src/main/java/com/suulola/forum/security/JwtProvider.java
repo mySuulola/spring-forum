@@ -1,50 +1,68 @@
 package com.suulola.forum.security;
 
-import com.suulola.forum.exception.ForumCustomException;
-import com.suulola.forum.model.User;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import javax.crypto.SecretKey;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.*;
-import java.security.cert.CertificateException;
-import java.util.Base64;
+import java.util.Date;
+
 
 @Service
+@Slf4j
 public class JwtProvider {
 
-    private KeyStore keyStore;
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
-    @PostConstruct
-    public void init() {
-        try{
-            keyStore = keyStore.getInstance("JKS");
-            InputStream resourceAsStream = getClass().getResourceAsStream("/springblog.jks");
-            keyStore.load(resourceAsStream, "secret".toCharArray());
+    @Value("${jwt.expiration}")
+    private int jwtExpirationMs;
 
-        }  catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
-            throw new ForumCustomException("Exception occurred while loading keystore");
-        }
-    }
     public String generateToken(Authentication authentication) {
-        org.springframework.security.core.userdetails.User principal = (org.springframework.security.core.userdetails.User) authentication.getPrincipal();
+        org.springframework.security.core.userdetails.User userPrincipal = (org.springframework.security.core.userdetails.User) authentication.getPrincipal();
 
-        String encodedString = Base64.getEncoder().encodeToString("secret".getBytes());
         return Jwts.builder()
-                .setSubject(principal.getUsername())
-                .signWith(getPrivateKey())
+                .setSubject(userPrincipal.getPassword())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(new Date().getTime() + jwtExpirationMs))
+                .signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
 
-    private Key getPrivateKey() {
-        SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-        return key;
-//            return (PrivateKey) keyStore.getKey("springforum", "secret".toCharArray());
+
+    public String getUsernameFromJWT(String token) {
+        return Jwts.parser()
+                .setSigningKey(jwtSecret)
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
+
+
+
+
+
+    public boolean validateToken(String authToken) {
+        try {
+            Jwts.parser()
+                    .setSigningKey(jwtSecret)
+                    .parseClaimsJws(authToken);
+            return true;
+        } catch (ExpiredJwtException e) {
+//            log.error("Invalid JWT signature: {} ", e.getMessage());
+            e.printStackTrace();
+        } catch (UnsupportedJwtException e) {
+//            log.error("Invalid JWT signature: {} ", e.getMessage());
+            e.printStackTrace();
+        } catch (MalformedJwtException e) {
+//            log.error("Invalid JWT signature: {} ", e.getMessage());
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+//            log.error("Invalid JWT signature: {} ", e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }

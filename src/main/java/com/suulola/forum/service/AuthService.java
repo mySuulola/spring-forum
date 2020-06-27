@@ -12,14 +12,16 @@ import com.suulola.forum.repository.VerificationTokenRepository;
 import com.suulola.forum.security.JwtProvider;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,13 +33,26 @@ import static com.suulola.forum.util.Constant.ACTIVATION_EMAIL;
 @Slf4j
 public class AuthService {
 
-  private final UserRepository userRepository;
-  private final PasswordEncoder passwordEncoder;
-  private final VerificationTokenRepository verificationTokenRepository;
-  private final MailContentBuilder mailContentBuilder;
-  private final MailService mailService;
-  private final AuthenticationManager authenticationManager;
-  private final JwtProvider jwtProvider;
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @Autowired
+    VerificationTokenRepository verificationTokenRepository;
+
+    @Autowired
+    MailContentBuilder mailContentBuilder;
+
+    @Autowired
+    MailService mailService;
+
+    @Autowired
+    AuthenticationManager authenticationManager;
+
+    @Autowired
+    JwtProvider jwtProvider;
 
 
   @Transactional
@@ -57,7 +72,7 @@ public class AuthService {
     newUser.setCreated(Instant.now());
 
     userRepository.save(newUser);
-    log.info("User Registered Successfully, Sending Authentication Email");
+//    log.info("User Registered Successfully, Sending Authentication Email");
 
     String token = generateVerificationToken(newUser);
     String message = mailContentBuilder.build("Thank you for signing up to the forum. Please click on the url below to activate your account: " + ACTIVATION_EMAIL+ "/" + token);
@@ -93,4 +108,12 @@ public class AuthService {
         String authenticationToken = jwtProvider.generateToken(authentication);
         return new AuthenticationResponse(authenticationToken, loginRequest.getUsername());
   }
+
+    @Transactional(readOnly = true)
+    public User getCurrentUser() {
+        org.springframework.security.core.userdetails.User principal = (org.springframework.security.core.userdetails.User) SecurityContextHolder.
+                getContext().getAuthentication().getPrincipal();
+        return userRepository.findByUsername(principal.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User name not found - " + principal.getUsername()));
+    }
 }

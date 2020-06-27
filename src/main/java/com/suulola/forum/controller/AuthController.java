@@ -5,6 +5,7 @@ import com.suulola.forum.dto.LoginRequest;
 import com.suulola.forum.dto.RegisterRequest;
 import com.suulola.forum.service.AuthService;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,8 +14,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @AllArgsConstructor
 public class AuthController {
+    public AuthController() {
+    }
 
-    private final AuthService authService;
+    @Autowired
+    AuthService authService;
 
     @GetMapping("/hello")
     public String sayHello() {
